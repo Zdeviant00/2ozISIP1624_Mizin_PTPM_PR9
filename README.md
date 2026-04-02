@@ -36,8 +36,7 @@ Microsoft Visual Studio методом "белого ящика".
 
 ### Функционал
 - Авторизация пользователей с проверкой в БД
-![AuthPage](<img width="975" height="730" alt="image" src="https://github.com/user-attachments/assets/b7cc28da-b755-4309-a81d-c933fbfdd94b" />
-)
+![AuthPage](<img width="975" height="730" alt="image" src="https://github.com/user-attachments/assets/b7cc28da-b755-4309-a81d-c933fbfdd94b" />)
 - Регистрация с валидацией:
   - Проверка заполнения всех полей
   - Проверка уникальности логина
