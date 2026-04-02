@@ -65,7 +65,8 @@ Microsoft Visual Studio методом "белого ящика".
 ![Reg1](https://github.com/user-attachments/assets/b2317026-b490-453b-974b-00649017f332)
 
 **Скриншот нового пользователя в БД:**
-![NewUserInDB](ссылка_на_скриншот_db_new_user.png)
+![NewUser1](https://github.com/user-attachments/assets/f82eb42b-38b8-4a32-a818-865085478ce2)
+
 ---
 
 ### Рефакторинг для тестирования
