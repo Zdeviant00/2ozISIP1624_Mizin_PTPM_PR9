@@ -15,7 +15,6 @@ Microsoft Visual Studio методом "белого ящика".
 [sql_script_user_table](sql_script_user_table)
 
 ## 2. WPF Приложение
-*Раздел в процессе*
 
 ### Структура проекта
 - **Проект:** `Mizin_WPF_PR9`
