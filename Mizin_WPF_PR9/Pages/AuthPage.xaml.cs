@@ -12,11 +12,11 @@ namespace Mizin_WPF_PR9.Pages
             InitializeComponent();
         }
 
-        // ========== Пуьличное свойство для доступа к полю логина из CaptchaPage ==========
+        // ========== Публичное свойство для доступа к полю логина ==========
         public string CurrentLogin => TextBoxLogin.Text;
 
-        // ========== РЕФАКТОРИНГ: Метод авторизации (без MessageBox для тестов) ==========
-        // Этот метод вызывается из тестов - поэтому нет MessageBox.Show()!
+        // ========== РЕФАКТОРИНГ: Метод авторизации (без MessageBox и CAPTCHA) ==========
+        // Этот метод вызывается из тестов - поэтому нет MessageBox.Show() и нет навигации!
         public bool Auth(string login, string password)
         {
             // Проверка заполнения полей
@@ -33,18 +33,16 @@ namespace Mizin_WPF_PR9.Pages
 
                 if (user == null)
                 {
-                    // === CAPTCHA: Увеличиваем счётчик и проверяем необходимость ===
+                    // Только увеличиваем счётчик - без MessageBox и навигации!
                     AttemptCounter.IncrementFailedAttempts(login);
-                    CheckCaptchaRequirement(login);
                     return false;
                 }
 
                 // Проверка пароля (регистрозависимый!)
                 if (user.Password != password)
                 {
-                    // === CAPTCHA: Увеличиваем счётчик и проверяем необходимость ===
+                    // Только увеличиваем счётчик - без MessageBox и навигации!
                     AttemptCounter.IncrementFailedAttempts(login);
-                    CheckCaptchaRequirement(login);
                     return false;
                 }
 
@@ -70,8 +68,9 @@ namespace Mizin_WPF_PR9.Pages
             }
         }
 
-        // ========== ПРОВЕРКА: Нужно ли показать CAPTCHA ==========
-        private void CheckCaptchaRequirement(string login)
+        // ========== ПРОВЕРКА: Нужно ли показать CAPTCHA (только для UI) ==========
+        // Этот метод не вызывается из Auth() - только из ButtonLogin_Click!
+        private void CheckAndShowCaptcha(string login)
         {
             if (AttemptCounter.ShouldShowCaptcha(login))
             {
@@ -81,7 +80,7 @@ namespace Mizin_WPF_PR9.Pages
             }
         }
 
-        // ========== Обработчик кнопки "Вход" (с MessageBox для пользователя) ==========
+        // ========== Обработчик кнопки "Вход" (с MessageBox И CAPTCHA для пользователя) ==========
         private void ButtonLogin_Click(object sender, RoutedEventArgs e)
         {
             string login = TextBoxLogin.Text;
@@ -109,6 +108,15 @@ namespace Mizin_WPF_PR9.Pages
                 }
                 else
                 {
+                    // === ПРОВЕРКА НА CAPTCHA ===
+                    if (AttemptCounter.ShouldShowCaptcha(login))
+                    {
+                        MessageBox.Show("После 3 неудачных попыток требуется ввести CAPTCHA!",
+                            "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        NavigationService.Navigate(new CaptchaPage(this));
+                        return;
+                    }
+
                     var user = GetUserByLogin(login);
 
                     if (user == null)

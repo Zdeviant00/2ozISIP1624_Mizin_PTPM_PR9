@@ -15,6 +15,7 @@ namespace UnitTestProject
         {
             _authPage = new AuthPage();
             // Сбросить все счётчики перед каждым тестом
+            AttemptCounter.ClearAll();
             AttemptCounter.ResetAttempts("test@gmail.com");
             AttemptCounter.ResetAttempts("user1@gmail.com");
             AttemptCounter.ResetAttempts("user2@gmail.com");

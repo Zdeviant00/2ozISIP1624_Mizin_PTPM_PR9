@@ -57,5 +57,12 @@ namespace Mizin_WPF_PR9.Pages
         {
             _lockTimes[login] = DateTime.Now.AddMinutes(LockDurationMinutes);
         }
+
+        // ========== Полная очистка всех данных ==========
+        public static void ClearAll()
+        {
+            _failedAttempts.Clear();
+            _lockTimes.Clear();
+        }
     }
 }
