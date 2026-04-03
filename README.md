@@ -156,6 +156,7 @@ Microsoft Visual Studio методом "белого ящика".
 ## 5. Обозреватель решений
 
 **Структура проекта в Visual Studio:**
+
 ![sol_brows_1](https://github.com/user-attachments/assets/8f1b11b4-07fa-464c-ae90-7f217534cb77)
 
 ## 6. Итоговые выводы
