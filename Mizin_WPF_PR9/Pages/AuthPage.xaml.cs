@@ -1,23 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Mizin_WPF_PR9.Pages
 {
-    /// <summary>
-    /// Логика взаимодействия для AuthPage.xaml
-    /// </summary>
     public partial class AuthPage : Page
     {
         public AuthPage()
@@ -25,7 +12,131 @@ namespace Mizin_WPF_PR9.Pages
             InitializeComponent();
         }
 
-                // ========== Обработчик изменения текста в поле Логин (для плейсхолдера) ==========
+        // ========== Пуьличное свойство для доступа к полю логина из CaptchaPage ==========
+        public string CurrentLogin => TextBoxLogin.Text;
+
+        // ========== РЕФАКТОРИНГ: Метод авторизации (без MessageBox для тестов) ==========
+        // Этот метод вызывается из тестов - поэтому нет MessageBox.Show()!
+        public bool Auth(string login, string password)
+        {
+            // Проверка заполнения полей
+            if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))
+            {
+                return false;
+            }
+
+            using (var db = new Mizin_2ЗISIP1624_PR9_Entities())
+            {
+                // Поиск пользователя (регистронезависимый логин)
+                var user = db.User.FirstOrDefault(u =>
+                    u.Login.Equals(login, StringComparison.OrdinalIgnoreCase));
+
+                if (user == null)
+                {
+                    // === CAPTCHA: Увеличиваем счётчик и проверяем необходимость ===
+                    AttemptCounter.IncrementFailedAttempts(login);
+                    CheckCaptchaRequirement(login);
+                    return false;
+                }
+
+                // Проверка пароля (регистрозависимый!)
+                if (user.Password != password)
+                {
+                    // === CAPTCHA: Увеличиваем счётчик и проверяем необходимость ===
+                    AttemptCounter.IncrementFailedAttempts(login);
+                    CheckCaptchaRequirement(login);
+                    return false;
+                }
+
+                // Проверка на удаленного пользователя
+                if (user.Role == "Удален")
+                {
+                    return false;
+                }
+
+                // Успешная авторизация - сбросить счётчик
+                AttemptCounter.ResetAttempts(login);
+                return true;
+            }
+        }
+
+        // ========== Вспомогательный метод для получения данных пользователя ==========
+        private User GetUserByLogin(string login)
+        {
+            using (var db = new Mizin_2ЗISIP1624_PR9_Entities())
+            {
+                return db.User.FirstOrDefault(u =>
+                    u.Login.Equals(login, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        // ========== ПРОВЕРКА: Нужно ли показать CAPTCHA ==========
+        private void CheckCaptchaRequirement(string login)
+        {
+            if (AttemptCounter.ShouldShowCaptcha(login))
+            {
+                MessageBox.Show("После 3 неудачных попыток требуется ввести CAPTCHA!",
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                NavigationService.Navigate(new CaptchaPage(this));
+            }
+        }
+
+        // ========== Обработчик кнопки "Вход" (с MessageBox для пользователя) ==========
+        private void ButtonLogin_Click(object sender, RoutedEventArgs e)
+        {
+            string login = TextBoxLogin.Text;
+            string password = PasswordBox.Password;
+
+            bool result = Auth(login, password);
+
+            if (result)
+            {
+                // Успешная авторизация - выводим приветствие
+                var user = GetUserByLogin(login);
+                if (user != null)
+                {
+                    MessageBox.Show($"Здравствуйте, {user.Role} {user.FIO}!",
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            else
+            {
+                // Показываем сообщения об ошибках только в UI
+                if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))
+                {
+                    MessageBox.Show("Заполните все поля!", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    var user = GetUserByLogin(login);
+
+                    if (user == null)
+                    {
+                        MessageBox.Show("Пользователь не найден!", "Ошибка",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    else if (user.Role == "Удален")
+                    {
+                        MessageBox.Show("Пользователь удален!", "Ошибка",
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Неверный пароль!", "Ошибка",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        // ========== Обработчик кнопки "Регистрация" ==========
+        private void ButtonRegister_Click(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new RegPage());
+        }
+
+        // ========== Обработчики для плейсхолдеров ==========
         private void TextBoxLogin_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (WatermarkLogin != null)
@@ -36,7 +147,6 @@ namespace Mizin_WPF_PR9.Pages
             }
         }
 
-        // ========== Обработчик изменения пароля (для плейсхолдера) ==========
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
             if (WatermarkPassword != null)
@@ -45,73 +155,6 @@ namespace Mizin_WPF_PR9.Pages
                     ? Visibility.Visible
                     : Visibility.Collapsed;
             }
-        }
-
-        // ========== РЕФАКТОРИНГ: Метод авторизации (будет вызываться из тестов) ==========
-        public bool Auth(string login, string password)
-        {
-            // Проверка заполнения полей
-            if (string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password))
-            {
-                MessageBox.Show("Заполните все поля!", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-
-            using (var db = new Mizin_2ЗISIP1624_PR9_Entities())
-            {
-                // Поиск пользователя (логин — регистронезависимый)
-                var user = db.User.FirstOrDefault(u =>
-                    u.Login.Equals(login, StringComparison.OrdinalIgnoreCase));
-
-                if (user == null)
-                {
-                    MessageBox.Show("Пользователь не найден!", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return false;
-                }
-
-                // Проверка пароля (регистрозависимый!)
-                if (user.Password != password)
-                {
-                    MessageBox.Show("Неверный пароль!", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return false;
-                }
-
-                // Проверка на удаленного пользователя
-                if (user.Role == "Удален")
-                {
-                    MessageBox.Show("Пользователь удален!", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return false;
-                }
-
-                // Успешная авторизация
-                MessageBox.Show($"Здравствуйте, {user.Role} {user.FIO}!",
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                return true;
-            }
-        }
-
-        // ========== Обработчик кнопки "Вход" ==========
-        private void ButtonLogin_Click(object sender, RoutedEventArgs e)
-        {
-            // Вызываем рефакторенный метод
-            bool result = Auth(TextBoxLogin.Text, PasswordBox.Password);
-
-            if (result)
-            {
-                // Здесь можно добавить переход на главную страницу
-                // NavigationService.Navigate(new MainPage());
-            }
-        }
-
-        // ========== Обработчик кнопки "Регистрация" ==========
-        private void ButtonRegister_Click(object sender, RoutedEventArgs e)
-        {
-            NavigationService.Navigate(new RegPage());
         }
     }
 }

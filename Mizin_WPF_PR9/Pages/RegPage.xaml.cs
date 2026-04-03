@@ -25,16 +25,16 @@ namespace Mizin_WPF_PR9.Pages
         {
             InitializeComponent();
         }
-        // ========== РЕФАКТОРИНГ: Метод регистрации (будет вызываться из тестов) ==========
+
+        // ========== РЕФАКТОРИНГ: Метод регистрации (без MessageBox для тестов) ==========
+        // Этот метод вызывается из тестов - поэтому нет MessageBox.Show()!
         public bool Register(string fio, string login, string password, string confirmPassword)
         {
-            // 1. Проверка заполнения всех полей
+            // 1. Проверка заполнения всех полей - без MessageBox!
             if (string.IsNullOrEmpty(fio) || string.IsNullOrEmpty(login) ||
                 string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
             {
-                MessageBox.Show("Заполните все поля!", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
+                return false;  // Возвращаем false
             }
 
             using (var db = new Mizin_2ЗISIP1624_PR9_Entities())
@@ -42,9 +42,7 @@ namespace Mizin_WPF_PR9.Pages
                 // 2. Проверка наличия логина в БД
                 if (db.User.Any(u => u.Login == login))
                 {
-                    MessageBox.Show("Пользователь с таким логином уже существует!",
-                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return false;
+                    return false;  // Возвращаем false
                 }
 
                 // 3. Проверка формата пароля
@@ -56,9 +54,7 @@ namespace Mizin_WPF_PR9.Pages
                 // 4. Проверка совпадения паролей
                 if (password != confirmPassword)
                 {
-                    MessageBox.Show("Пароли не совпадают!", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return false;
+                    return false;  // Возвращаем false
                 }
 
                 // 5. Регистрация нового пользователя
@@ -73,47 +69,38 @@ namespace Mizin_WPF_PR9.Pages
                 db.User.Add(newUser);
                 db.SaveChanges();
 
-                MessageBox.Show("Пользователь успешно зарегистрирован!",
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                return true;
+                return true;  // Возвращаем true (без MessageBox!)
             }
         }
 
-        // ========== Вспомогательный метод проверки пароля ==========
+        // ========== Вспомогательный метод проверки пароля (без MessageBox) ==========
         private bool IsValidPassword(string password)
         {
             // а) Минимум 6 символов
             if (password.Length < 6)
             {
-                MessageBox.Show("Пароль должен содержать минимум 6 символов!",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
+                return false;  // Без MessageBox!
             }
 
             // б) Только английская раскладка
             Regex englishPattern = new Regex(@"^[a-zA-Z0-9!@#$%^&*(),.?""':{}|<>]+$");
             if (!englishPattern.IsMatch(password))
             {
-                MessageBox.Show("Пароль должен содержать только английские символы!",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
+                return false;  // Без MessageBox!
             }
 
             // в) Хотя бы одна цифра
             if (!password.Any(char.IsDigit))
             {
-                MessageBox.Show("Пароль должен содержать хотя бы одну цифру!",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
+                return false;  // Без MessageBox!
             }
 
             return true;
         }
 
-        // ========== Обработчик кнопки "Регистрация" ==========
+        // ========== Обработчик кнопки "Регистрация" (с MessageBox для пользователя) ==========
         private void ButtonRegister_Click(object sender, RoutedEventArgs e)
         {
-            // Вызываем рефакторенный метод
             bool result = Register(
                 TextBoxFIO.Text,
                 TextBoxLogin.Text,
@@ -123,8 +110,45 @@ namespace Mizin_WPF_PR9.Pages
 
             if (result)
             {
-                // Возврат на страницу авторизации после успешной регистрации
+                MessageBox.Show("Пользователь успешно зарегистрирован!",
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 NavigationService.Navigate(new AuthPage());
+            }
+            else
+            {
+                // Показываем сообщения об ошибках только в UI
+                if (string.IsNullOrEmpty(TextBoxFIO.Text) || string.IsNullOrEmpty(TextBoxLogin.Text) ||
+                    string.IsNullOrEmpty(PasswordBox.Password) || string.IsNullOrEmpty(PasswordBoxConfirm.Password))
+                {
+                    MessageBox.Show("Заполните все поля!", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    using (var db = new Mizin_2ЗISIP1624_PR9_Entities())
+                    {
+                        if (db.User.Any(u => u.Login == TextBoxLogin.Text))
+                        {
+                            MessageBox.Show("Пользователь с таким логином уже существует!",
+                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                        else if (PasswordBox.Password != PasswordBoxConfirm.Password)
+                        {
+                            MessageBox.Show("Пароли не совпадают!", "Ошибка",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                        else if (PasswordBox.Password.Length < 6)
+                        {
+                            MessageBox.Show("Пароль должен содержать минимум 6 символов!",
+                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Ошибка при регистрации. Проверьте формат пароля.",
+                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                }
             }
         }
 
@@ -136,7 +160,11 @@ namespace Mizin_WPF_PR9.Pages
             TextBoxLogin.Clear();
             PasswordBox.Clear();
             PasswordBoxConfirm.Clear();
-            TextBlockError.Visibility = Visibility.Collapsed;
+
+            if (TextBlockError != null)
+            {
+                TextBlockError.Visibility = Visibility.Collapsed;
+            }
 
             // Возврат на страницу авторизации
             NavigationService.Navigate(new AuthPage());
